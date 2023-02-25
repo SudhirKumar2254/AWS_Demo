@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Projects\\Demo\\AWS_Demo\\AWSLambdas\\AWSLambdas.csproj": {}
+    "D:\\Projects\\AWS_Demo\\AWSLambdas\\AWSLambdas.csproj": {}
   },
   "projects": {
-    "D:\\Projects\\Demo\\AWS_Demo\\AWSLambdas\\AWSLambdas.csproj": {
+    "D:\\Projects\\AWS_Demo\\AWSLambdas\\AWSLambdas.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Projects\\Demo\\AWS_Demo\\AWSLambdas\\AWSLambdas.csproj",
+        "projectUniqueName": "D:\\Projects\\AWS_Demo\\AWSLambdas\\AWSLambdas.csproj",
         "projectName": "AWSLambdas",
-        "projectPath": "D:\\Projects\\Demo\\AWS_Demo\\AWSLambdas\\AWSLambdas.csproj",
+        "projectPath": "D:\\Projects\\AWS_Demo\\AWSLambdas\\AWSLambdas.csproj",
         "packagesPath": "C:\\Users\\sudhi\\.nuget\\packages\\",
-        "outputPath": "D:\\Projects\\Demo\\AWS_Demo\\AWSLambdas\\obj\\",
+        "outputPath": "D:\\Projects\\AWS_Demo\\AWSLambdas\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\sudhi\\AppData\\Roaming\\NuGet\\NuGet.Config",

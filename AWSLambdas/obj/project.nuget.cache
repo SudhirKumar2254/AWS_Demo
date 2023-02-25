@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "hFuAuT+axdNj+C9Ntk5Yo3mN+5wgkh197m5+faq1F1nNTuSzNbY7PuMWzYjpEWAo3+ZLXpX34PvaE8Rz16sEyg==",
+  "dgSpecHash": "S/7xQpMwuM72RG1h/71poDH9RyNc6l4ogEW4TqZsu1xADe0EM62XMHniAiUJsYdKq6gmWvF8zFqqJqpEKUGmtA==",
   "success": true,
-  "projectFilePath": "D:\\Projects\\Demo\\AWS_Demo\\AWSLambdas\\AWSLambdas.csproj",
+  "projectFilePath": "D:\\Projects\\AWS_Demo\\AWSLambdas\\AWSLambdas.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\sudhi\\.nuget\\packages\\amazon.lambda.apigatewayevents\\2.6.0\\amazon.lambda.apigatewayevents.2.6.0.nupkg.sha512",
     "C:\\Users\\sudhi\\.nuget\\packages\\amazon.lambda.core\\2.1.0\\amazon.lambda.core.2.1.0.nupkg.sha512",
