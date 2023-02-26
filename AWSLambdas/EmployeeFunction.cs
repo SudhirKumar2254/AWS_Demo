@@ -87,12 +87,6 @@ public class EmployeeFunction
                 Body = "Your request is under processing and you will get an email once processed. "
             };
         }
-
-        return new APIGatewayProxyResponse
-        {
-            StatusCode = (int)HttpStatusCode.OK,
-            Body = _jsonConverter.SerializeObject(empDetails)
-        };
     }
 
     public void PutMessageInDb(APIGatewayProxyRequest request, ILambdaContext context)
@@ -115,12 +109,19 @@ public class EmployeeFunction
         {
             Thread.Sleep(5000);
             var describeExecResponse = await _stepFunctionsRepository.DescribeExecution(response.ExecutionArn);
-
+            if (describeExecResponse.Status != "Success")
+            {
+                PutMessageInDb(request, context);
+            }
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)HttpStatusCode.OK,
                 Body = describeExecResponse.Status
             };
+        }
+        else
+        {
+            PutMessageInDb(request, context);
         }
 
         return new APIGatewayProxyResponse
