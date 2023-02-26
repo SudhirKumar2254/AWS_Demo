@@ -1,7 +1,6 @@
 
 *.lock
 *.vsidx
-.vs/AWSLambdas/v17/.suo
 *.v2
 *.dll
 *.pdb
@@ -10,4 +9,4 @@
 bin
 obj
 *.cache
-/.vs/ProjectEvaluation
+.vs
