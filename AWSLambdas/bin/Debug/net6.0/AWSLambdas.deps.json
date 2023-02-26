@@ -12,6 +12,7 @@
           "AWSSDK.DynamoDBv2": "3.7.101.50",
           "AWSSDK.SQS": "3.7.100.79",
           "AWSSDK.SimpleNotificationService": "3.7.101.15",
+          "AWSSDK.StepFunctions": "3.7.102.52",
           "Amazon.Lambda.APIGatewayEvents": "2.6.0",
           "Amazon.Lambda.Core": "2.1.0",
           "Amazon.Lambda.Serialization.SystemTextJson": "2.3.0",
@@ -89,6 +90,17 @@
           }
         }
       },
+      "AWSSDK.StepFunctions/3.7.102.52": {
+        "dependencies": {
+          "AWSSDK.Core": "3.7.105.8"
+        },
+        "runtime": {
+          "lib/netcoreapp3.1/AWSSDK.StepFunctions.dll": {
+            "assemblyVersion": "3.3.0.0",
+            "fileVersion": "3.7.102.52"
+          }
+        }
+      },
       "Newtonsoft.Json/13.0.2": {
         "runtime": {
           "lib/net6.0/Newtonsoft.Json.dll": {
@@ -153,6 +165,13 @@
       "sha512": "sha512-0g4UW2KR8bJV6OsvNH4qKHLSRF5W9KQlB0ShYRYMQlY1IpNIvbI0KZXAVhYmYAAYo59stbwkbxX+pFaLMZ1VMg==",
       "path": "awssdk.sqs/3.7.100.79",
       "hashPath": "awssdk.sqs.3.7.100.79.nupkg.sha512"
+    },
+    "AWSSDK.StepFunctions/3.7.102.52": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-rHWcvX16R8vCgvt8z6D+adlpGPo8IVU4Rt4aUPDRyAPOQ/gThw7lyaHp5D0h63ijjaPmpHCcXNkPwAC8Tka4BQ==",
+      "path": "awssdk.stepfunctions/3.7.102.52",
+      "hashPath": "awssdk.stepfunctions.3.7.102.52.nupkg.sha512"
     },
     "Newtonsoft.Json/13.0.2": {
       "type": "package",

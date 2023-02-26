@@ -8,5 +8,6 @@ D:\Projects\AWS_Demo\AWSLambdas\bin\Release\net6.0\publish\AWSSDK.Core.dll
 D:\Projects\AWS_Demo\AWSLambdas\bin\Release\net6.0\publish\AWSSDK.DynamoDBv2.dll
 D:\Projects\AWS_Demo\AWSLambdas\bin\Release\net6.0\publish\AWSSDK.SimpleNotificationService.dll
 D:\Projects\AWS_Demo\AWSLambdas\bin\Release\net6.0\publish\AWSSDK.SQS.dll
+D:\Projects\AWS_Demo\AWSLambdas\bin\Release\net6.0\publish\AWSSDK.StepFunctions.dll
 D:\Projects\AWS_Demo\AWSLambdas\bin\Release\net6.0\publish\Newtonsoft.Json.dll
 D:\Projects\AWS_Demo\AWSLambdas\bin\Release\net6.0\publish\AWSLambdas.dll

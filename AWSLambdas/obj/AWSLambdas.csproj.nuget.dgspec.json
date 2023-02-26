@@ -56,6 +56,10 @@
               "target": "Package",
               "version": "[3.7.101.15, )"
             },
+            "AWSSDK.StepFunctions": {
+              "target": "Package",
+              "version": "[3.7.102.52, )"
+            },
             "Amazon.Lambda.APIGatewayEvents": {
               "target": "Package",
               "version": "[2.6.0, )"
