@@ -7,3 +7,6 @@
 *.pdb
 *.dll
 *.pdb
+bin
+obj
+*.cache
