@@ -1,15 +1,11 @@
-using Amazon.Lambda.Core;
-using AWSLambdas.Models;
-using Amazon.Lambda.APIGatewayEvents;
-using Amazon.DynamoDBv2;
-using Amazon.Runtime.Internal.Util;
-using AWSLambdas.Services;
-using System.Net;
-using AWSLambdas.Dynamo;
 using Amazon.DynamoDBv2.Model;
-using Microsoft.VisualBasic;
-using Amazon.StepFunctions.Model;
+using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Core;
+using AWSLambdas.Dynamo;
+using AWSLambdas.Models;
+using AWSLambdas.Services;
 using AWSLambdas.StepFunctions;
+using System.Net;
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
@@ -73,6 +69,12 @@ public class EmployeeFunction
         if (queryResponse.Count > 0)
         {
             var response = await PostData(request, context);
+
+            return new APIGatewayProxyResponse
+            {
+                StatusCode = (int)HttpStatusCode.OK,
+                Body = response.Body
+            };
         }
         else
         {
@@ -109,11 +111,22 @@ public class EmployeeFunction
         var empDetails = _jsonConverter.DeserializeObject<EmployeeDetailsModel>(request.Body);
 
         var response = await _stepFunctionsRepository.StartExecution();
+        if (response.HttpStatusCode == HttpStatusCode.OK)
+        {
+            Thread.Sleep(5000);
+            var describeExecResponse = await _stepFunctionsRepository.DescribeExecution(response.ExecutionArn);
+
+            return new APIGatewayProxyResponse
+            {
+                StatusCode = (int)HttpStatusCode.OK,
+                Body = describeExecResponse.Status
+            };
+        }
 
         return new APIGatewayProxyResponse
         {
             StatusCode = (int)HttpStatusCode.OK,
-            Body = _jsonConverter.SerializeObject(empDetails)
+            Body = "Your request failed"
         };
     }
 }

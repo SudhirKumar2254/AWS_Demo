@@ -17,9 +17,17 @@ namespace AWSLambdas.StepFunctions
         public async Task<StartExecutionResponse> StartExecution()
 
         {
-            var startExecutionRequest= new StartExecutionRequest();
+            var startExecutionRequest = new StartExecutionRequest();
             startExecutionRequest.StateMachineArn = StateMachineArn;
             return await _stepFunctionsClient.StartExecution(startExecutionRequest);
+        }
+
+        public async Task<DescribeExecutionResponse> DescribeExecution(string executionArn)
+
+        {
+            var describeExecutionRequest = new DescribeExecutionRequest();
+            describeExecutionRequest.ExecutionArn = executionArn;
+            return await _stepFunctionsClient.DescribeExecution(describeExecutionRequest);
         }
     }
 }

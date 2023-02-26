@@ -20,5 +20,10 @@ namespace AWSLambdas.StepFunctions
         {
             return await _stepFunctionsClient.StartExecutionAsync(startExecutionRequest);
         }
+
+        public async Task<DescribeExecutionResponse> DescribeExecution(DescribeExecutionRequest describeExecutionRequest)
+        {
+            return await _stepFunctionsClient.DescribeExecutionAsync(describeExecutionRequest);
+        }
     }
 }
