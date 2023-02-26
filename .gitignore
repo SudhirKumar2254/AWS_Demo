@@ -3,3 +3,7 @@
 *.vsidx
 .vs/AWSLambdas/v17/.suo
 *.v2
+*.dll
+*.pdb
+*.dll
+*.pdb

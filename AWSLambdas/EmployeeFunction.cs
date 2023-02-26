@@ -70,6 +70,7 @@ public class EmployeeFunction
         var queryResponse = await _dynamoDbClient.QueryAsync(queryRequest);
 
         //If circuit is closed do work else put the message in DB
+
         if (queryResponse.Count > 0)
         {
             var response = await PostData(request, context);
