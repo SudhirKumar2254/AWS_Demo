@@ -1,0 +1,5 @@
+
+*.lock
+*.vsidx
+.vs/AWSLambdas/v17/.suo
+*.v2
