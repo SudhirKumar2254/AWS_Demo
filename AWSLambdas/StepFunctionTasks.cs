@@ -1,6 +1,5 @@
 using Amazon.Lambda.Core;
-
-
+using Amazon.Runtime;
 
 namespace AWSLambdas;
 
@@ -15,9 +14,12 @@ public class StepFunctionTasks
 
     public State PostDataToExternalApi1(State state, ILambdaContext context)
     {
-        state.Message = "Hello";
-        throw new NotImplementedException();
+        HttpClient client = new HttpClient();
+        client.BaseAddress = new Uri("https://random-data-api.com/api/beer/random_beer");
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, client.BaseAddress);
+        var response = client.Send(request);
 
+        state.Message = response.Content.ReadAsStringAsync().Result;
         if (!string.IsNullOrEmpty(state.Name))
         {
             state.Message += " " + state.Name;

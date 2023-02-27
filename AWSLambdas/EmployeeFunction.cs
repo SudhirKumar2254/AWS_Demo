@@ -116,7 +116,7 @@ public class EmployeeFunction
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)HttpStatusCode.OK,
-                Body = describeExecResponse.Status
+                Body = describeExecResponse.Output
             };
         }
         else
