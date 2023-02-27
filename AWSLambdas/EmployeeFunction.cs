@@ -215,11 +215,11 @@ public class EmployeeFunction
             //Call lambda function Post Bind Client
             var postBindClientResponse = await _lambdaRepository.Invoke("PostBindClient", request.Body);
             StreamReader reader = new StreamReader(postBindClientResponse.Payload);
-            string text = reader.ReadToEnd();
+            string postBindClientResponseText = reader.ReadToEnd();
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)HttpStatusCode.OK,
-                Body = text
+                Body = postBindClientResponseText
             };
         }
         else
@@ -239,7 +239,7 @@ public class EmployeeFunction
         {
             //throw new InvalidDataException();
             context.Logger.Log("Inside the PostBindClientHandler");
-           // var policyDetails = _jsonConverter.DeserializeObject<PolicyDetailsModel>(request);
+            // var policyDetails = _jsonConverter.DeserializeObject<PolicyDetailsModel>(request);
 
             HttpClient client = new HttpClient();
             client.BaseAddress = new Uri("https://www.randomnumberapi.com/api/v1.0/randomnumber");
