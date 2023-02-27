@@ -11,7 +11,7 @@ namespace AWSLambdas.Dynamo
         public DynamoDbClient()
         {
             var dynamoDbConfig = new AmazonDynamoDBConfig();
-            dynamoDbConfig.RegionEndpoint = RegionEndpoint.APNortheast1;            
+            dynamoDbConfig.RegionEndpoint = RegionEndpoint.APNortheast1;
             _amazonDynamoDBClient = new AmazonDynamoDBClient(dynamoDbConfig);
         }
 
@@ -24,6 +24,11 @@ namespace AWSLambdas.Dynamo
         public async Task<QueryResponse> QueryAsync(QueryRequest queryRequest)
         {
             return await _amazonDynamoDBClient.QueryAsync(queryRequest);
+        }
+
+        public async Task<UpdateItemResponse> UpdateItem(UpdateItemRequest updateItemRequest)
+        {
+            return await _amazonDynamoDBClient.UpdateItemAsync(updateItemRequest);
         }
     }
 }

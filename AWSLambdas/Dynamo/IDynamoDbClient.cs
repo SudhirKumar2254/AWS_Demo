@@ -7,5 +7,7 @@ namespace AWSLambdas.Dynamo
         Task PutItemAsync(PutItemRequest putItemRequest);
 
         Task<QueryResponse> QueryAsync(QueryRequest queryRequest);
+
+        Task<UpdateItemResponse> UpdateItem(UpdateItemRequest updateItemRequest);
     }
 }
