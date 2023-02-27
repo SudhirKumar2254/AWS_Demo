@@ -4,6 +4,7 @@ using Amazon.Lambda.Core;
 using AWSLambdas.Dynamo;
 using AWSLambdas.Models;
 using AWSLambdas.Services;
+using AWSLambdas.SNS;
 using AWSLambdas.StepFunctions;
 using System.Net;
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
@@ -19,16 +20,20 @@ public class EmployeeFunction
     private readonly IEmployeeMessagesRepository _employeeMessagesRepository;
     private readonly IStepFunctionsClient _stepFunctionsClient;
     private readonly IStepFunctionsRepository _stepFunctionsRepository;
+    private readonly ISnsClient _snsClient;
+    private readonly ISnsRepository _snsRepository;
 
-    public EmployeeFunction() : this(null, null, null, null, null) { }
+    public EmployeeFunction() : this(null, null, null, null, null, null, null) { }
 
-    public EmployeeFunction(IJsonConverter jsonConverter, IDynamoDbClient dynamoDbClient, IEmployeeMessagesRepository employeeMessagesRepository, IStepFunctionsClient stepFunctionsClient, IStepFunctionsRepository stepFunctionsRepository)
+    public EmployeeFunction(IJsonConverter jsonConverter, IDynamoDbClient dynamoDbClient, IEmployeeMessagesRepository employeeMessagesRepository, IStepFunctionsClient stepFunctionsClient, IStepFunctionsRepository stepFunctionsRepository, ISnsClient snsClient, ISnsRepository snsRepository)
     {
         _jsonConverter = jsonConverter ?? new JsonConverter();
         _dynamoDbClient = dynamoDbClient ?? new DynamoDbClient();
         _employeeMessagesRepository = employeeMessagesRepository ?? new EmployeeMessagesRepository(_dynamoDbClient);
         _stepFunctionsClient = stepFunctionsClient ?? new StepFunctionsClient();
         _stepFunctionsRepository = stepFunctionsRepository ?? new StepFunctionsRepository(_stepFunctionsClient);
+        _snsClient = snsClient ?? new SnsClient();
+        _snsRepository = snsRepository ?? new SnsRepository(_snsClient);
     }
 
     public async Task<APIGatewayProxyResponse> ValidateEmployeeDataHandler(APIGatewayProxyRequest request, ILambdaContext context)
@@ -69,7 +74,7 @@ public class EmployeeFunction
         if (queryResponse.Count > 0)
         {
             var response = await PostData(request, context);
-
+            SendSNSNotification(context, "Request processed successfully", "Your request is successfully processed... and the response is " + response.Body);
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)HttpStatusCode.OK,
@@ -99,6 +104,13 @@ public class EmployeeFunction
 
     }
 
+    public void SendSNSNotification(ILambdaContext context, string emailSubject, string emailBody)
+    {
+        context.Logger.Log("Inside SendSNSNotification");
+        _snsRepository.SendNotification(emailSubject,emailBody);
+
+    }
+
     public async Task<APIGatewayProxyResponse> PostData(APIGatewayProxyRequest request, ILambdaContext context)
     {
         context.Logger.Log("Inside the PostData");
@@ -109,15 +121,23 @@ public class EmployeeFunction
         {
             Thread.Sleep(5000);
             var describeExecResponse = await _stepFunctionsRepository.DescribeExecution(response.ExecutionArn);
-            if (describeExecResponse.Status != "Success")
+            if (describeExecResponse.Status == "SUCCEEDED")
+            {
+                return new APIGatewayProxyResponse
+                {
+                    StatusCode = (int)HttpStatusCode.OK,
+                    Body = describeExecResponse.Output
+                };
+            }
+            else
             {
                 PutMessageInDb(request, context);
+                return new APIGatewayProxyResponse
+                {
+                    StatusCode = (int)HttpStatusCode.OK,
+                    Body = "Your request failed..."
+                };
             }
-            return new APIGatewayProxyResponse
-            {
-                StatusCode = (int)HttpStatusCode.OK,
-                Body = describeExecResponse.Output
-            };
         }
         else
         {
@@ -130,4 +150,6 @@ public class EmployeeFunction
             Body = "Your request failed"
         };
     }
+
+
 }
