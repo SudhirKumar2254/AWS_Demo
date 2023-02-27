@@ -197,9 +197,12 @@ public class EmployeeFunction
         //Check the ciruit breaker
         var queryRequest = new QueryRequest("CircuitBreakerDB")
         {
-            KeyConditionExpression = "CircuitStatus = :CircuitStatus"
+            KeyConditionExpression = "SettingName = :SettingName"
         };
-        queryRequest.ExpressionAttributeValues.Add(":CircuitStatus", new AttributeValue { S = "Closed" });
+        queryRequest.ExpressionAttributeValues.Add(":SettingName", new AttributeValue { S = "CircuitStatus" });
+
+        queryRequest.FilterExpression = "CurrentStatus = :CurrentStatus";
+        queryRequest.ExpressionAttributeValues.Add(":CurrentStatus", new AttributeValue { S = "Closed" });
 
         var queryResponse = await _dynamoDbClient.QueryAsync(queryRequest);
 
@@ -212,7 +215,7 @@ public class EmployeeFunction
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)HttpStatusCode.OK,
-                Body = postBindClientResponse.ResponseMetadata.Metadata.ToString()
+                Body = postBindClientResponse.Payload.ToString()
             };
         }
         else
@@ -230,7 +233,7 @@ public class EmployeeFunction
     {
         try
         {
-            //throw new InvalidDataException();
+            throw new InvalidDataException();
             context.Logger.Log("Inside the PostBindClientHandler");
             var policyDetails = _jsonConverter.DeserializeObject<PolicyDetailsModel>(request.Body);
 
@@ -247,12 +250,12 @@ public class EmployeeFunction
             var updateItemRequest = new UpdateItemRequest();
             updateItemRequest.TableName = "CircuitBreakerDB";
             Dictionary<string, AttributeValue> key = new Dictionary<string, AttributeValue> {
-                {"CircuitStatus",new AttributeValue{S = "CurrentStatus" } }
+                {"SettingName",new AttributeValue{S = "CircuitStatus" } }
             };
 
             Dictionary<string, AttributeValueUpdate> updates = new Dictionary<string, AttributeValueUpdate>();
 
-            updates["Status"] = new AttributeValueUpdate() { Action = AttributeAction.PUT, Value = new AttributeValue { S = "Open" } };
+            updates["CurrentStatus"] = new AttributeValueUpdate() { Action = AttributeAction.PUT, Value = new AttributeValue { S = "Open" } };
 
             updateItemRequest.Key = key;
             updateItemRequest.AttributeUpdates = updates;
