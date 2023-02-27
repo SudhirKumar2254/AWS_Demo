@@ -3,13 +3,16 @@ using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.Model;
 using AWSLambdas.Dynamo;
 using AWSLambdas.Lambda;
 using AWSLambdas.Models;
 using AWSLambdas.Services;
 using AWSLambdas.SNS;
 using AWSLambdas.StepFunctions;
+using System.IO;
 using System.Net;
+using System.Net.Http.Json;
 using System.Runtime.ExceptionServices;
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -211,11 +214,12 @@ public class EmployeeFunction
         {
             //Call lambda function Post Bind Client
             var postBindClientResponse = await _lambdaRepository.Invoke("PostBindClient", request.Body);
-
+            StreamReader reader = new StreamReader(postBindClientResponse.Payload);
+            string text = reader.ReadToEnd();
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)HttpStatusCode.OK,
-                Body = postBindClientResponse.Payload.ToString()
+                Body = text
             };
         }
         else
@@ -229,13 +233,13 @@ public class EmployeeFunction
         }
     }
 
-    public async Task<string> PostBindClientHandler(APIGatewayProxyRequest request, ILambdaContext context)
+    public async Task<string> PostBindClientHandler(AmazonLambdaRequest request, ILambdaContext context)
     {
         try
         {
-            throw new InvalidDataException();
+            //throw new InvalidDataException();
             context.Logger.Log("Inside the PostBindClientHandler");
-            var policyDetails = _jsonConverter.DeserializeObject<PolicyDetailsModel>(request.Body);
+           // var policyDetails = _jsonConverter.DeserializeObject<PolicyDetailsModel>(request);
 
             HttpClient client = new HttpClient();
             client.BaseAddress = new Uri("https://www.randomnumberapi.com/api/v1.0/randomnumber");
