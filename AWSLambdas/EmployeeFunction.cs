@@ -127,7 +127,7 @@ public class EmployeeFunction
         context.Logger.Log("Inside the PostData");
         var empDetails = _jsonConverter.DeserializeObject<EmployeeDetailsModel>(request.Body);
 
-        var response = await _stepFunctionsRepository.StartExecution();
+        var response = await _stepFunctionsRepository.StartExecution("");
         if (response.HttpStatusCode == HttpStatusCode.OK)
         {
             Thread.Sleep(5000);
@@ -209,17 +209,36 @@ public class EmployeeFunction
 
         var queryResponse = await _dynamoDbClient.QueryAsync(queryRequest);
 
-        //If circuit is closed do work else put the message in DB
+        //If circuit is closed call post bind client else put the message in DB
         if (queryResponse.Count > 0)
         {
             //Call lambda function Post Bind Client
             var postBindClientResponse = await _lambdaRepository.Invoke("PostBindClient", request.Body);
             StreamReader reader = new StreamReader(postBindClientResponse.Payload);
             string postBindClientResponseText = reader.ReadToEnd();
+
+
+            if (postBindClientResponseText.Contains("Post Bind Service failed"))
+            {
+                // Put this request in post bind failed queue
+
+                //Return generic message
+                return new APIGatewayProxyResponse
+                {
+                    StatusCode = (int)HttpStatusCode.OK,
+                    Body = "Your request is under processing and you will get an email once processed. "
+                };
+
+            }
+            // if post bind client is success invoke a step function async
+
+            var response = _stepFunctionsRepository.StartExecution(request.Body);
+
+
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)HttpStatusCode.OK,
-                Body = postBindClientResponseText
+                Body = "Your temporary policy id - " + postBindClientResponseText
             };
         }
         else
@@ -250,6 +269,7 @@ public class EmployeeFunction
         catch (Exception ex)
         {
             context.Logger.Log("Error Message - " + ex.Message + "::::: Stack Trace - " + ex.StackTrace);
+
             //Update the ciruit breaker to Open
             var updateItemRequest = new UpdateItemRequest();
             updateItemRequest.TableName = "CircuitBreakerDB";
@@ -264,6 +284,7 @@ public class EmployeeFunction
             updateItemRequest.Key = key;
             updateItemRequest.AttributeUpdates = updates;
             var updateResponse = await _dynamoDbClient.UpdateItem(updateItemRequest);
+
 
             return "Post Bind Service failed";
         }

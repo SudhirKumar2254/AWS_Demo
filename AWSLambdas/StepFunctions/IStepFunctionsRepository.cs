@@ -4,7 +4,7 @@ namespace AWSLambdas.StepFunctions
 {
     public interface IStepFunctionsRepository
     {
-        Task<StartExecutionResponse> StartExecution();
+        Task<StartExecutionResponse> StartExecution(string input);
 
         Task<DescribeExecutionResponse> DescribeExecution(string executionArn);
     }
