@@ -36,5 +36,9 @@ namespace AWSLambdas.Dynamo
         {
             return await _amazonDynamoDBClient.ScanAsync(scanRequest);
         }
+        public async Task DeleteItemAsync(DeleteItemRequest deleteItemRequest)
+        {
+            await _amazonDynamoDBClient.DeleteItemAsync(deleteItemRequest);
+        }
     }
 }

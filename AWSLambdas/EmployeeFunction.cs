@@ -393,7 +393,13 @@ public class EmployeeFunction
                     if (sqsResponse.HttpStatusCode == HttpStatusCode.OK)
                     {
                         //Delete from Table once pushed to queue
-                        //TO DO
+                        var deleteItemRequest = new DeleteItemRequest();
+                        deleteItemRequest.TableName = "MessagesDb";
+                        Dictionary<string, AttributeValue> keys = new Dictionary<string, AttributeValue> {
+                         {"MessageId",new AttributeValue{S =  row["MessageId"].S } }
+                        };
+                        deleteItemRequest.Key = keys;
+                        await _dynamoDbClient.DeleteItemAsync(deleteItemRequest);
                     }
                 }
             }

@@ -11,5 +11,7 @@ namespace AWSLambdas.Dynamo
         Task<UpdateItemResponse> UpdateItem(UpdateItemRequest updateItemRequest);
 
         Task<ScanResponse> GetAllItems(ScanRequest scanRequest);
+
+        Task DeleteItemAsync(DeleteItemRequest deleteItemRequest);
     }
 }
