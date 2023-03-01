@@ -1,14 +1,21 @@
 using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DataModel;
+using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Model;
+using Amazon.Lambda.SQSEvents;
+using Amazon.Runtime.EventStreams;
+using Amazon.Runtime.Internal;
+using Amazon.SQS;
 using AWSLambdas.Dynamo;
 using AWSLambdas.Lambda;
 using AWSLambdas.Models;
 using AWSLambdas.Services;
 using AWSLambdas.SNS;
+using AWSLambdas.SQS;
 using AWSLambdas.StepFunctions;
 using System.IO;
 using System.Net;
@@ -31,10 +38,12 @@ public class EmployeeFunction
     private readonly ISnsRepository _snsRepository;
     private readonly ILambdaClient _lambdaClient;
     private readonly ILambdaRepository _lambdaRepository;
+    private readonly ISqsClient _sqsClient;
+    private readonly ISqsRepository _sqsRepository;
 
-    public EmployeeFunction() : this(null, null, null, null, null, null, null, null, null) { }
+    public EmployeeFunction() : this(null, null, null, null, null, null, null, null, null, null, null) { }
 
-    public EmployeeFunction(IJsonConverter jsonConverter, IDynamoDbClient dynamoDbClient, IEmployeeMessagesRepository employeeMessagesRepository, IStepFunctionsClient stepFunctionsClient, IStepFunctionsRepository stepFunctionsRepository, ISnsClient snsClient, ISnsRepository snsRepository, ILambdaClient lambdaClient, ILambdaRepository lambdaRepository)
+    public EmployeeFunction(IJsonConverter jsonConverter, IDynamoDbClient dynamoDbClient, IEmployeeMessagesRepository employeeMessagesRepository, IStepFunctionsClient stepFunctionsClient, IStepFunctionsRepository stepFunctionsRepository, ISnsClient snsClient, ISnsRepository snsRepository, ILambdaClient lambdaClient, ILambdaRepository lambdaRepository, ISqsClient sqsClient, ISqsRepository sqsRepository)
     {
         _jsonConverter = jsonConverter ?? new JsonConverter();
         _dynamoDbClient = dynamoDbClient ?? new DynamoDbClient();
@@ -45,6 +54,8 @@ public class EmployeeFunction
         _snsRepository = snsRepository ?? new SnsRepository(_snsClient);
         _lambdaClient = lambdaClient ?? new LambdaClient();
         _lambdaRepository = lambdaRepository ?? new LambdaRepository(_lambdaClient);
+        _sqsClient = sqsClient ?? new SqsClient();
+        _sqsRepository = sqsRepository ?? new SqsRepository(_sqsClient);
     }
 
     public async Task<APIGatewayProxyResponse> ValidateEmployeeDataHandler(APIGatewayProxyRequest request, ILambdaContext context)
@@ -107,7 +118,7 @@ public class EmployeeFunction
 
     public void PutMessageInDb(APIGatewayProxyRequest request, ILambdaContext context)
     {
-        context.Logger.Log("Inside the PutMessageInDb");
+        context.Logger.LogLine("Inside the PutMessageInDb");
 
         EmployeeMessageModel employeeMessage = new EmployeeMessageModel();
         employeeMessage.Message = request.Body;
@@ -117,14 +128,14 @@ public class EmployeeFunction
 
     public void SendSNSNotification(ILambdaContext context, string emailSubject, string emailBody)
     {
-        context.Logger.Log("Inside SendSNSNotification");
+        context.Logger.LogLine("Inside SendSNSNotification");
         _snsRepository.SendNotification(emailSubject, emailBody);
 
     }
 
     public async Task<APIGatewayProxyResponse> PostData(APIGatewayProxyRequest request, ILambdaContext context)
     {
-        context.Logger.Log("Inside the PostData");
+        context.Logger.LogLine("Inside the PostData");
         var empDetails = _jsonConverter.DeserializeObject<EmployeeDetailsModel>(request.Body);
 
         var response = await _stepFunctionsRepository.StartExecution("");
@@ -166,7 +177,7 @@ public class EmployeeFunction
     #region TMHCC-POC
     public async Task<APIGatewayProxyResponse> ValidateRequestAndCheckCircuitStatusHandler(APIGatewayProxyRequest request, ILambdaContext context)
     {
-        context.Logger.Log("Inside the ValidateRequestAndCheckCircuitStatusHandlder");
+        context.Logger.LogLine("Inside the ValidateRequestAndCheckCircuitStatusHandlder");
         var policyDetails = _jsonConverter.DeserializeObject<PolicyDetailsModel>(request.Body);
 
         //Validation of the input data
@@ -220,13 +231,14 @@ public class EmployeeFunction
 
             if (postBindClientResponseText.Contains("Post Bind Service failed"))
             {
-                // Put this request in post bind failed queue
+                // Put this request in post bind queue
+                var sqsResponse = await _sqsRepository.SendMessageToSQSQueue(request.Body, "https://sqs.ap-northeast-1.amazonaws.com/178515926936/PostBindQueue");
 
                 //Return generic message
                 return new APIGatewayProxyResponse
                 {
                     StatusCode = (int)HttpStatusCode.OK,
-                    Body = "Your request is under processing and you will get an email once processed. "
+                    Body = "Your request is under processing and you will get an email once processed. PostBindQueue "
                 };
 
             }
@@ -243,7 +255,8 @@ public class EmployeeFunction
         }
         else
         {
-            // Call lambda Backup Messages Processor
+            // Put the request in MessageDb
+            await InsertRequestInMessagesDb(request.Body, request.RequestContext.RequestId);
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)HttpStatusCode.OK,
@@ -257,36 +270,134 @@ public class EmployeeFunction
         try
         {
             //throw new InvalidDataException();
-            context.Logger.Log("Inside the PostBindClientHandler");
-            // var policyDetails = _jsonConverter.DeserializeObject<PolicyDetailsModel>(request);
+            context.Logger.LogLine("Inside the PostBindClientHandler");
+            //var policyDetails = _jsonConverter.DeserializeObject<PolicyDetailsModel>(request);
 
-            HttpClient client = new HttpClient();
-            client.BaseAddress = new Uri("https://www.randomnumberapi.com/api/v1.0/randomnumber");
-            HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Get, client.BaseAddress);
-            var response = client.Send(httpRequest);
-            return response.Content.ReadAsStringAsync().Result;
+            HttpResponseMessage response = PostBindServiceCall();
+            var policyDetails = _jsonConverter.DeserializeObject<PolicyDetailsModel>(response.Content.ReadAsStringAsync().Result);
+            return policyDetails.Id.ToString();
         }
         catch (Exception ex)
         {
-            context.Logger.Log("Error Message - " + ex.Message + "::::: Stack Trace - " + ex.StackTrace);
+            context.Logger.LogLine("Error Message - " + ex.Message + "::::: Stack Trace - " + ex.StackTrace);
 
             //Update the ciruit breaker to Open
-            var updateItemRequest = new UpdateItemRequest();
-            updateItemRequest.TableName = "CircuitBreakerDB";
-            Dictionary<string, AttributeValue> key = new Dictionary<string, AttributeValue> {
-                {"SettingName",new AttributeValue{S = "CircuitStatus" } }
-            };
-
-            Dictionary<string, AttributeValueUpdate> updates = new Dictionary<string, AttributeValueUpdate>();
-
-            updates["CurrentStatus"] = new AttributeValueUpdate() { Action = AttributeAction.PUT, Value = new AttributeValue { S = "Open" } };
-
-            updateItemRequest.Key = key;
-            updateItemRequest.AttributeUpdates = updates;
-            var updateResponse = await _dynamoDbClient.UpdateItem(updateItemRequest);
+            await UpdateCircuitBreaker("Open");
 
 
             return "Post Bind Service failed";
+        }
+    }
+    public async Task PostBindClientFromSQSHandler(SQSEvent evnt, ILambdaContext context)
+    {
+        context.Logger.LogLine($"Inside the PostBindClientFromSQSHandler");
+        foreach (var message in evnt.Records)
+        {
+
+            //throw new ApplicationException("Intentionally failed");
+            var policyDetails = _jsonConverter.DeserializeObject<PolicyDetailsModel>(message.Body);
+
+            HttpResponseMessage response = PostBindServiceCall();
+            // response.Content.ReadAsStringAsync().Result;    
+
+
+            // if post bind client is success invoke a step function async
+            var executionResponse = _stepFunctionsRepository.StartExecution(message.Body);
+
+            //Check the ciruit breaker
+            var queryRequest = new QueryRequest("CircuitBreakerDB")
+            {
+                KeyConditionExpression = "SettingName = :SettingName"
+            };
+            queryRequest.ExpressionAttributeValues.Add(":SettingName", new AttributeValue { S = "CircuitStatus" });
+
+            queryRequest.FilterExpression = "CurrentStatus = :CurrentStatus";
+            queryRequest.ExpressionAttributeValues.Add(":CurrentStatus", new AttributeValue { S = "Closed" });
+
+            var queryResponse = await _dynamoDbClient.QueryAsync(queryRequest);
+
+            //If circuit is closed call post bind client else put the message in DB
+            if (queryResponse.Count == 0)
+            {
+                //Update the ciruit breaker to Closed
+                await UpdateCircuitBreaker("Closed");
+            }
+
+        }
+    }
+    private static HttpResponseMessage PostBindServiceCall()
+    {
+        HttpClient client = new HttpClient();
+        client.BaseAddress = new Uri("https://lvafns7zf8.execute-api.ap-northeast-1.amazonaws.com/Development/pets/1");
+        HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Get, client.BaseAddress);
+        var response = client.Send(httpRequest);
+        if (response.StatusCode != HttpStatusCode.OK)
+        {
+            throw new Exception("Post Bind Service not available");
+        }
+        return response;
+    }
+
+    private async Task UpdateCircuitBreaker(string value)
+    {
+        //Update the ciruit breaker to Open
+        var updateItemRequest = new UpdateItemRequest();
+        updateItemRequest.TableName = "CircuitBreakerDB";
+        Dictionary<string, AttributeValue> key = new Dictionary<string, AttributeValue> {
+                {"SettingName",new AttributeValue{S = "CircuitStatus" } }
+            };
+
+        Dictionary<string, AttributeValueUpdate> updates = new Dictionary<string, AttributeValueUpdate>();
+
+        updates["CurrentStatus"] = new AttributeValueUpdate() { Action = AttributeAction.PUT, Value = new AttributeValue { S = value } };
+
+        updateItemRequest.Key = key;
+        updateItemRequest.AttributeUpdates = updates;
+        var updateResponse = await _dynamoDbClient.UpdateItem(updateItemRequest);
+    }
+
+    private async Task InsertRequestInMessagesDb(string message, string messageId)
+    {
+        //Update the ciruit breaker to Open
+        var putItemRequest = new PutItemRequest();
+        putItemRequest.TableName = "MessagesDb";
+        Dictionary<string, AttributeValue> item = new Dictionary<string, AttributeValue> {
+                {"MessageId",new AttributeValue{S = messageId }},
+                {"MessageDetails",new AttributeValue{S = message }}
+            };
+        putItemRequest.Item = item;
+        await _dynamoDbClient.PutItemAsync(putItemRequest);
+    }
+
+    public async Task BackupMessagesProcessorHandler(GetRecordsResponse recordsList, ILambdaContext context)
+    {
+        context.Logger.LogLine($"Inside the BackupMessagesProcessorHandler");
+
+        //throw new ApplicationException("Intentionally failed");
+        //var policyDetails = _jsonConverter.DeserializeObject<PolicyDetailsModel>(message.Body);
+        foreach (var item in recordsList.Records)
+        {
+            context.Logger.LogLine("Event:" + item.EventName.Value + "... Circuit Current Status:  " + item.Dynamodb.NewImage["CurrentStatus"].S);
+            if (item.EventName.Value == "MODIFY" && item.Dynamodb.NewImage["CurrentStatus"].S == "Closed")
+            {
+                //Read all records from MessagesDb and process
+                ScanRequest scanRequest = new ScanRequest();
+                scanRequest.TableName = "MessagesDb";
+                ScanResponse scanResponse = await _dynamoDbClient.GetAllItems(scanRequest);
+
+                foreach (var row in scanResponse.Items)
+                {
+                    context.Logger.LogLine("Processing record messageId-" + row["MessageId"].S + "::: Message Details -" + row["MessageDetails"].S);
+                    // Put this request in post bind queue
+                    var sqsResponse = await _sqsRepository.SendMessageToSQSQueue(row["MessageDetails"].S, "https://sqs.ap-northeast-1.amazonaws.com/178515926936/PostBindQueue");
+                    if (sqsResponse.HttpStatusCode == HttpStatusCode.OK)
+                    {
+                        //Delete from Table once pushed to queue
+                        //TO DO
+                    }
+                }
+            }
+
         }
     }
 

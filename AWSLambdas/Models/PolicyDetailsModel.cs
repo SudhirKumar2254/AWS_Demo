@@ -7,5 +7,7 @@
         public DateTime PolicyEndDate { get; set; }
         public int PolicyId { get; set; }
 
+        public int Id { get; set; }
+
     }
 }

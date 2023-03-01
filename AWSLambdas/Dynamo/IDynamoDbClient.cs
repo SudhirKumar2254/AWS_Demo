@@ -9,5 +9,7 @@ namespace AWSLambdas.Dynamo
         Task<QueryResponse> QueryAsync(QueryRequest queryRequest);
 
         Task<UpdateItemResponse> UpdateItem(UpdateItemRequest updateItemRequest);
+
+        Task<ScanResponse> GetAllItems(ScanRequest scanRequest);
     }
 }

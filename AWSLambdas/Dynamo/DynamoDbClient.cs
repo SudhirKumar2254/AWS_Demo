@@ -1,4 +1,5 @@
 ﻿using Amazon;
+using Amazon.Auth.AccessControlPolicy;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 
@@ -29,6 +30,11 @@ namespace AWSLambdas.Dynamo
         public async Task<UpdateItemResponse> UpdateItem(UpdateItemRequest updateItemRequest)
         {
             return await _amazonDynamoDBClient.UpdateItemAsync(updateItemRequest);
+        }
+
+        public async Task<ScanResponse> GetAllItems(ScanRequest scanRequest)
+        {
+            return await _amazonDynamoDBClient.ScanAsync(scanRequest);
         }
     }
 }
