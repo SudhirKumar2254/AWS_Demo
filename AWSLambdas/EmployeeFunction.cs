@@ -234,6 +234,8 @@ public class EmployeeFunction
                 // Put this request in post bind queue
                 var sqsResponse = await _sqsRepository.SendMessageToSQSQueue(request.Body, "https://sqs.ap-northeast-1.amazonaws.com/178515926936/PostBindQueue");
 
+                //Send failure notification
+                await _snsRepository.SendNotification("Post Bind Service failure", "Post Bind service caused issue. Please check and fix it");
                 //Return generic message
                 return new APIGatewayProxyResponse
                 {
@@ -405,6 +407,40 @@ public class EmployeeFunction
             }
 
         }
+    }
+
+    public async Task DocumentGenClientFromSQSHandler(SQSEvent evnt, ILambdaContext context)
+    {
+        //  throw new InvalidDataException();
+        context.Logger.LogLine($"Inside the DocumentGenClientFromSQSHandler");
+        foreach (var message in evnt.Records)
+        {
+            context.Logger.LogLine($"Processing - " + message.Body);
+            HttpClient client = new HttpClient();
+            client.BaseAddress = new Uri("https://random-data-api.com/api/beer/random_beer");
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, client.BaseAddress);
+            var response = client.Send(request);
+            // Put this request in post bind queue
+            var sqsResponse = await _sqsRepository.SendMessageToSQSQueue(message.Body, "https://sqs.ap-northeast-1.amazonaws.com/178515926936/DocManagementQueue");
+
+        }
+
+    }
+
+    public async Task BoxClientFromSQSHandler(SQSEvent evnt, ILambdaContext context)
+    {
+        // throw new InvalidDataException();
+        context.Logger.LogLine($"Inside the BoxClientFromSQSHandler");
+        foreach (var message in evnt.Records)
+        {
+            context.Logger.LogLine($"Processing - " + message.Body);
+            HttpClient client = new HttpClient();
+            client.BaseAddress = new Uri("https://random-data-api.com/api/beer/random_beer");
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, client.BaseAddress);
+            var response = client.Send(request);
+        }
+
+
     }
 
 
