@@ -20,6 +20,7 @@ namespace AWSLambdas.StepFunctions
             var startExecutionRequest = new StartExecutionRequest();
             startExecutionRequest.StateMachineArn = StateMachineArn;
             startExecutionRequest.Input = input;
+            startExecutionRequest.Name = DateTime.Now.ToString("yyyy-MM-ddTHHmmssfffffff");
             return await _stepFunctionsClient.StartExecution(startExecutionRequest);
         }
 
