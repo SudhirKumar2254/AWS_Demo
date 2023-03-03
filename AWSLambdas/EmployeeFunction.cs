@@ -21,6 +21,10 @@ using System.IO;
 using System.Net;
 using System.Net.Http.Json;
 using System.Runtime.ExceptionServices;
+using Amazon.EventBridge;
+using AWSLambdas.EventBridge;
+using Amazon.EventBridge.Model;
+using Amazon.Lambda.CloudWatchEvents;
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
@@ -40,10 +44,11 @@ public class EmployeeFunction
     private readonly ILambdaRepository _lambdaRepository;
     private readonly ISqsClient _sqsClient;
     private readonly ISqsRepository _sqsRepository;
+    private readonly IEventBridgeClient _eventBridgeClient;
+    private readonly IEventBridgeRepository _eventBridgeRepository;
+    public EmployeeFunction() : this(null, null, null, null, null, null, null, null, null, null, null, null, null) { }
 
-    public EmployeeFunction() : this(null, null, null, null, null, null, null, null, null, null, null) { }
-
-    public EmployeeFunction(IJsonConverter jsonConverter, IDynamoDbClient dynamoDbClient, IEmployeeMessagesRepository employeeMessagesRepository, IStepFunctionsClient stepFunctionsClient, IStepFunctionsRepository stepFunctionsRepository, ISnsClient snsClient, ISnsRepository snsRepository, ILambdaClient lambdaClient, ILambdaRepository lambdaRepository, ISqsClient sqsClient, ISqsRepository sqsRepository)
+    public EmployeeFunction(IJsonConverter jsonConverter, IDynamoDbClient dynamoDbClient, IEmployeeMessagesRepository employeeMessagesRepository, IStepFunctionsClient stepFunctionsClient, IStepFunctionsRepository stepFunctionsRepository, ISnsClient snsClient, ISnsRepository snsRepository, ILambdaClient lambdaClient, ILambdaRepository lambdaRepository, ISqsClient sqsClient, ISqsRepository sqsRepository, IEventBridgeClient eventBridgeClient, IEventBridgeRepository eventBridgeRepository)
     {
         _jsonConverter = jsonConverter ?? new JsonConverter();
         _dynamoDbClient = dynamoDbClient ?? new DynamoDbClient();
@@ -56,6 +61,8 @@ public class EmployeeFunction
         _lambdaRepository = lambdaRepository ?? new LambdaRepository(_lambdaClient);
         _sqsClient = sqsClient ?? new SqsClient();
         _sqsRepository = sqsRepository ?? new SqsRepository(_sqsClient);
+        _eventBridgeClient = eventBridgeClient ?? new EventBridgeClient();
+        _eventBridgeRepository = eventBridgeRepository ?? new EventBridgeRepository(_eventBridgeClient);
     }
 
     public async Task<APIGatewayProxyResponse> ValidateEmployeeDataHandler(APIGatewayProxyRequest request, ILambdaContext context)
@@ -420,8 +427,8 @@ public class EmployeeFunction
             client.BaseAddress = new Uri("https://random-data-api.com/api/beer/random_beer");
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, client.BaseAddress);
             var response = client.Send(request);
-            // Put this request in post bind queue
-            var sqsResponse = await _sqsRepository.SendMessageToSQSQueue(message.Body, "https://sqs.ap-northeast-1.amazonaws.com/178515926936/DocManagementQueue");
+            // Put this request in eventbridge
+            await _eventBridgeRepository.PutEvent(message.Body, "arn:aws:events:ap-northeast-1:178515926936:event-bus/default");
 
         }
 
@@ -443,21 +450,18 @@ public class EmployeeFunction
 
     }
 
-    //public async Task BoxClientFromEventBridgeHandler(Event evnt, ILambdaContext context)
-    //{
-    //    // throw new InvalidDataException();
-    //    context.Logger.LogLine($"Inside the BoxClientFromEventBridgeHandler");
-    //    foreach (var message in evnt.Records)
-    //    {
-    //        context.Logger.LogLine($"Processing - " + message.Body);
-    //        HttpClient client = new HttpClient();
-    //        client.BaseAddress = new Uri("https://random-data-api.com/api/beer/random_beer");
-    //        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, client.BaseAddress);
-    //        var response = client.Send(request);
-    //    }
+    public async Task BoxClientFromEventBridgeHandler(CloudWatchEvent<PolicyDetailsModel> eventBridgeRequest, ILambdaContext context)
+    {
+        // throw new InvalidDataException();
+        context.Logger.LogLine($"Inside the BoxClientFromEventBridgeHandler");
+        var policyDetails = _jsonConverter.SerializeObject(eventBridgeRequest.Detail);
+        context.Logger.LogLine($"Processing - " + policyDetails);
+        HttpClient client = new HttpClient();
+        client.BaseAddress = new Uri("https://random-data-api.com/api/beer/random_beer");
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, client.BaseAddress);
+        var response = client.Send(request);
 
-
-    //}
+    }
 
     #endregion
 
