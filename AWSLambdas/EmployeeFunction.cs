@@ -246,7 +246,7 @@ public class EmployeeFunction
             }
             // if post bind client is success invoke a step function async
 
-            var response = _stepFunctionsRepository.StartExecution(request.Body);
+            var response = await _stepFunctionsRepository.StartExecution(request.Body);
 
 
             return new APIGatewayProxyResponse
@@ -304,7 +304,7 @@ public class EmployeeFunction
 
 
             // if post bind client is success invoke a step function async
-            var executionResponse = _stepFunctionsRepository.StartExecution(message.Body);
+            var executionResponse = await _stepFunctionsRepository.StartExecution(message.Body);
 
             //Check the ciruit breaker
             var queryRequest = new QueryRequest("CircuitBreakerDB")
@@ -443,6 +443,21 @@ public class EmployeeFunction
 
     }
 
+    //public async Task BoxClientFromEventBridgeHandler(Event evnt, ILambdaContext context)
+    //{
+    //    // throw new InvalidDataException();
+    //    context.Logger.LogLine($"Inside the BoxClientFromEventBridgeHandler");
+    //    foreach (var message in evnt.Records)
+    //    {
+    //        context.Logger.LogLine($"Processing - " + message.Body);
+    //        HttpClient client = new HttpClient();
+    //        client.BaseAddress = new Uri("https://random-data-api.com/api/beer/random_beer");
+    //        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, client.BaseAddress);
+    //        var response = client.Send(request);
+    //    }
+
+
+    //}
 
     #endregion
 
